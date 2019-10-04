@@ -117,7 +117,12 @@ def list_current_addresses(args):
 
     print("")
 
-
+def check_ip(hostname):
+    try:
+        return dns.resolver.query(hostname, 'A')
+    except Exception:
+        return []
+        
 def main(arguments):
 
     parser = argparse.ArgumentParser(
@@ -181,7 +186,7 @@ def main(arguments):
                 True if ".".join(tldextract.extract(hostname)[1:]) in domains else False
                 for hostname in hostnames
             )
-            not_valid = any(True if address in [k.address for k in dns.resolver.query(hostname, 'A')] else False for hostname in hostnames)
+            not_valid = any(True if address in [k.address for k in check_ip(hostname)] else False for hostname in hostnames)
 
             if not valid_tld or not not_valid:
                 print("\t= {} : {}".format(address, hostnames[0]))
