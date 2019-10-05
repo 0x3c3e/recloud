@@ -73,8 +73,8 @@ def get_hostnames(address):
 
     if response.status_code != 200:
         print("[!] SecurityTrails request failed!")
-        print(response.text)
-        sys.exit(1)
+        time.sleep(2)
+        raise ValueError
 
     records = response.json().pop("records", [])
 
