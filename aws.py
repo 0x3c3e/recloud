@@ -171,13 +171,14 @@ def main(arguments):
         if address in ip_list:
             print("Hooray, the ip in the list: {}".format(address))
             break
-
-        try:
-            hostnames = get_hostnames(address)
-        except Exception:
-            print("Issues with trails")
-            time.sleep(0.2)
-            hostnames = []
+        for _ in range(3):
+            try:
+                hostnames = get_hostnames(address)
+                break
+            except Exception:
+                print("Issues with trails\n")
+                time.sleep(1)
+        
         if hostnames:
             valid_tld = any(
                 True if ".".join(tldextract.extract(hostname)[1:]) in domains else False
