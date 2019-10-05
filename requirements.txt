@@ -2,3 +2,4 @@ apache-libcloud
 boto3
 requests
 dnspython
+netaddr

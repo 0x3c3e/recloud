@@ -6,6 +6,7 @@ import time
 from multiprocessing import Process
 import tldextract
 import dns.resolver
+from netaddr import IPNetwork, IPAddress
 
 from botocore.config import Config
 
@@ -30,8 +31,6 @@ with open("domains.txt") as f:
         domain = line.strip()
         if domain not in blacklist:
             domains.append(domain)
-
-print(domains[:10])
 
 Description = """                      
  _____ _           _ _____                     
@@ -119,28 +118,20 @@ def check_ip(hostname):
         return dns.resolver.query(hostname, 'A')
     except Exception:
         return []
-        
-def main(arguments):
 
-    parser = argparse.ArgumentParser(
-        description=Description, formatter_class=argparse.RawDescriptionHelpFormatter
-    )
-    parser.add_argument(
-        "region", choices=AWSRegions + ["all"], help="AWS Region to search"
-    )
-    parser.add_argument(
-        "-c", "--count", type=int, help="Number of IPs to try", default=10000
-    )
-    parser.add_argument(
-        "-l", "--list", help="List current IP info", action="store_true"
-    )
-    parser.add_argument("-aK", "--access-key", help="AWS access key")
-    parser.add_argument("-sK", "--secret-key", help="AWS secret key")
-    args = parser.parse_args(arguments)
+def filter_ips_by_region(region):
+    url = 'https://ip-ranges.amazonaws.com/ip-ranges.json'
+    data = requests.get(url).json()
+    cidr_of_region = [k['ip_prefix'] for k in data['prefixes'] if k['region'] == region]
+    result = []
+    for ip in ip_list:
+        for ip_cidr in cidr_of_region:
+            if IPAddress(ip) in IPNetwork(ip_cidr) and ip not in result:
+                result.append(ip)
+                break
+    return result
 
-    if args.list:
-        return list_current_addresses(args)
-
+def main(args):
     engine = boto3.client(
         "ec2",
         aws_access_key_id=args.access_key,
@@ -148,14 +139,13 @@ def main(arguments):
         region_name=args.region,
         config=config,
     )
-
     print(
         "\n[+] Connected to AWS. Hunting in {} ... (max: {})\n".format(
             args.region, args.count
         )
     )
 
-    for l in range(0, args.count):
+    for _ in range(0, args.count):
 
         for _ in range(3):
             try:
@@ -171,12 +161,14 @@ def main(arguments):
         if address in ip_list:
             print("Hooray, the ip in the list: {}".format(address))
             break
+
         for _ in range(3):
             try:
                 hostnames = get_hostnames(address)
                 break
             except Exception:
-                print("Issues with trails\n")
+                hostnames = []
+                print("Issues with trails")
                 time.sleep(1)
         
         if hostnames:
@@ -188,7 +180,6 @@ def main(arguments):
 
             if not valid_tld or not not_valid:
                 print("\t= {} : {}".format(address, hostnames[0]))
-                time.sleep(0.1)
             else:
                 print("\t+++ {} : {}".format(address, "|".join(hostnames)))
                 break
@@ -207,10 +198,25 @@ def main(arguments):
 
 if __name__ == "__main__":
     print(Description)
-
+    parser = argparse.ArgumentParser(
+        description=Description, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "region", choices=AWSRegions + ["all"], help="AWS Region to search"
+    )
+    parser.add_argument(
+        "-c", "--count", type=int, help="Number of IPs to try", default=10000
+    )
+    parser.add_argument(
+        "-p", "--processes", help="Amount of processes"
+    )
+    parser.add_argument("-aK", "--access-key", help="AWS access key")
+    parser.add_argument("-sK", "--secret-key", help="AWS secret key")
+    args = parser.parse_args(sys.argv[1:])
+    ip_list = filter_ips_by_region(args.region)
     procs = []
-    for _ in range(5):
-        proc = Process(target=main, args=(sys.argv[1:],))
+    for _ in range(int(args.processes)):
+        proc = Process(target=main, args=(args,))
         procs.append(proc)
         proc.start()
         time.sleep(1)
