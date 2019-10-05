@@ -2,10 +2,8 @@ import re, os, sys, argparse
 import boto3
 from pprint import pprint
 import requests
-import random
 import time
 from multiprocessing import Process
-import csv
 import tldextract
 import dns.resolver
 
@@ -27,14 +25,13 @@ blacklist = [
 with open("ip_list") as f:
     ip_list = [line.strip() for line in f.readlines()]
 
-with open("top-1m.csv") as csvfile:
-    reader = csv.DictReader(csvfile)
-    for i, row in enumerate(reader):
-        if i > 50_000:
-            break
-        d = row["domain"]
-        if d not in blacklist:
-            domains.append(d)
+with open("domains.txt") as f:
+    for line in f:
+        domain = line.strip()
+        if domain not in blacklist:
+            domains.append(domain)
+
+print(domains[:10])
 
 Description = """                      
  _____ _           _ _____                     
