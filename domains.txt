@@ -404,7 +404,6 @@ hackerone-user-content.com
 hackfacebook.com
 hboeck.de
 healthifyme.com
-herokuapp.com
 heroku.com
 hhvm.com
 highwebmedia.com
