@@ -1,10 +1,8 @@
 import argparse
-import os
 import re
 import sys
 import time
 from multiprocessing import Process
-from pprint import pprint
 
 import boto3
 import dns.resolver
@@ -122,7 +120,7 @@ def main(args):
         )
     )
 
-    for _ in range(0, args.count):
+    for _ in range(args.count):
 
         for _ in range(3):
             try:
@@ -149,16 +147,16 @@ def main(args):
                 time.sleep(1)
 
         if hostnames:
-            valid_tld = any(
-                True if ".".join(tldextract.extract(hostname)[1:]) in domains else False
+            tld_in_whitelist = any(
+                ".".join(tldextract.extract(hostname)[1:]) in domains
                 for hostname in hostnames
             )
             used_in_dns_record = any(
-                True if address in [k.address for k in check_ip(hostname)] else False
+                address in [k.address for k in check_ip(hostname)]
                 for hostname in hostnames
             )
 
-            if not valid_tld or not used_in_dns_record:
+            if not tld_in_whitelist or not used_in_dns_record:
                 print("\t= {} : {}".format(address, hostnames[0]))
             else:
                 print("\t+++ {} : {}".format(address, "|".join(hostnames)))
