@@ -1,14 +1,17 @@
-import re, os, sys, argparse
-import boto3
-from pprint import pprint
-import requests
+import argparse
+import os
+import re
+import sys
 import time
 from multiprocessing import Process
-import tldextract
-import dns.resolver
-from netaddr import IPNetwork, IPAddress
+from pprint import pprint
 
+import boto3
+import dns.resolver
+import requests
+import tldextract
 from botocore.config import Config
+from netaddr import IPAddress, IPNetwork
 
 config = Config(retries=dict(max_attempts=10))
 
@@ -84,52 +87,26 @@ def get_hostnames(address):
     return []
 
 
-def list_current_addresses(args):
-    if args.region == "all":
-        regions = AWSRegions
-    else:
-        regions = [args.region]
-
-    for region in regions:
-
-        engine = boto3.client(
-            "ec2",
-            aws_access_key_id=args.access_key,
-            aws_secret_access_key=args.secret_key,
-            region_name=region,
-            config=config,
-        )
-
-        current_addresses = [
-            a["PublicIp"] for a in engine.describe_addresses().pop("Addresses", [])
-        ]
-
-        if len(current_addresses) > 1:
-            print("\n[+] {} has {}\n".format(region, len(current_addresses)))
-
-            for addr in current_addresses:
-                hostnames = get_hostnames(addr)
-                print("{:15} : {}".format(addr, "|".join(hostnames)))
-
-    print("")
-
 def check_ip(hostname):
     try:
-        return dns.resolver.query(hostname, 'A')
+        return dns.resolver.query(hostname, "A")
     except Exception:
         return []
 
+
 def filter_ips_by_region(region):
-    url = 'https://ip-ranges.amazonaws.com/ip-ranges.json'
+    url = "https://ip-ranges.amazonaws.com/ip-ranges.json"
     data = requests.get(url).json()
-    cidr_of_region = [k['ip_prefix'] for k in data['prefixes'] if k['region'] == region]
+    cidr_of_region = [k["ip_prefix"] for k in data["prefixes"] if k["region"] == region]
     result = []
+
     for ip in ip_list:
         for ip_cidr in cidr_of_region:
-            if IPAddress(ip) in IPNetwork(ip_cidr) and ip not in result:
-                result.append(ip)
+            if IPAddress(ip) in IPNetwork(ip_cidr):
+                result.append(result)
                 break
     return result
+
 
 def main(args):
     engine = boto3.client(
@@ -159,7 +136,7 @@ def main(args):
         allocation_id = eip["AllocationId"]
 
         if address in ip_list:
-            print("Hooray, the ip in the list: {}".format(address))
+            print("\tHooray, the ip is in the list: {}".format(address))
             break
 
         for _ in range(3):
@@ -170,52 +147,57 @@ def main(args):
                 hostnames = []
                 print("Issues with trails")
                 time.sleep(1)
-        
+
         if hostnames:
             valid_tld = any(
                 True if ".".join(tldextract.extract(hostname)[1:]) in domains else False
                 for hostname in hostnames
             )
-            not_valid = any(True if address in [k.address for k in check_ip(hostname)] else False for hostname in hostnames)
+            used_in_dns_record = any(
+                True if address in [k.address for k in check_ip(hostname)] else False
+                for hostname in hostnames
+            )
 
-            if not valid_tld or not not_valid:
+            if not valid_tld or not used_in_dns_record:
                 print("\t= {} : {}".format(address, hostnames[0]))
             else:
                 print("\t+++ {} : {}".format(address, "|".join(hostnames)))
                 break
 
         print("\t- {:15}".format(address), end="\r")
+
         for _ in range(3):
             try:
                 engine.release_address(AllocationId=allocation_id)
                 break
             except Exception:
                 time.sleep(1)
-                print("Realese exception")
+                print("Release exception")
 
     print("\n")
 
 
 if __name__ == "__main__":
     print(Description)
+
     parser = argparse.ArgumentParser(
         description=Description, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument(
-        "region", choices=AWSRegions + ["all"], help="AWS Region to search"
-    )
+    parser.add_argument("region", choices=AWSRegions, help="AWS Region to search")
     parser.add_argument(
         "-c", "--count", type=int, help="Number of IPs to try", default=10000
     )
     parser.add_argument(
-        "-p", "--processes", help="Amount of processes"
+        "-p", "--processes", type=int, help="Amount of processes", default=5
     )
     parser.add_argument("-aK", "--access-key", help="AWS access key")
     parser.add_argument("-sK", "--secret-key", help="AWS secret key")
+
     args = parser.parse_args(sys.argv[1:])
     ip_list = filter_ips_by_region(args.region)
+
     procs = []
-    for _ in range(int(args.processes)):
+    for _ in range(args.processes):
         proc = Process(target=main, args=(args,))
         procs.append(proc)
         proc.start()
