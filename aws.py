@@ -147,16 +147,17 @@ def main(args):
                 time.sleep(1)
 
         if hostnames:
-            tld_in_whitelist = any(
-                ".".join(tldextract.extract(hostname)[1:]) in domains
+            whitelist_tld = [
+                hostname
                 for hostname in hostnames
-            )
+                if ".".join(tldextract.extract(hostname)[1:]) in domains
+            ]
             used_in_dns_record = any(
                 address in [k.address for k in check_ip(hostname)]
-                for hostname in hostnames
+                for hostname in whitelist_tld
             )
 
-            if not tld_in_whitelist or not used_in_dns_record:
+            if not used_in_dns_record:
                 print("\t= {} : {}".format(address, hostnames[0]))
             else:
                 print("\t+++ {} : {}".format(address, "|".join(hostnames)))
