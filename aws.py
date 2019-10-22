@@ -9,7 +9,8 @@ import dns.resolver
 import requests
 import tldextract
 from botocore.config import Config
-from netaddr import IPAddress, IPNetwork
+import tempfile
+import subprocess
 
 config = Config(retries=dict(max_attempts=10))
 
@@ -92,18 +93,27 @@ def check_ip(hostname):
         return []
 
 
-def filter_ips_by_region(region):
+def check_ip_by_region(region):
     url = "https://ip-ranges.amazonaws.com/ip-ranges.json"
     data = requests.get(url).json()
     cidr_of_region = [k["ip_prefix"] for k in data["prefixes"] if k["region"] == region]
-    result = []
 
-    for ip in ip_list:
-        for ip_cidr in cidr_of_region:
-            if IPAddress(ip) in IPNetwork(ip_cidr):
-                result.append(result)
-                break
-    return result
+    networks = tempfile.NamedTemporaryFile("w")
+    networks.writelines([line + "\n" for line in cidr_of_region])
+    networks.seek(0)
+
+    r = subprocess.check_output(
+        [
+            "go",
+            "run",
+            "check_range.go",
+            "-network_file",
+            networks.name,
+            "-ip_file",
+            "ip_list",
+        ]
+    )
+    return r.decode("utf-8").splitlines()
 
 
 def main(args):
@@ -193,8 +203,7 @@ if __name__ == "__main__":
     parser.add_argument("-sK", "--secret-key", help="AWS secret key")
 
     args = parser.parse_args(sys.argv[1:])
-    ip_list = filter_ips_by_region(args.region)
-
+    ip_list = check_ip_by_region(args.region)
     procs = []
     for _ in range(args.processes):
         proc = Process(target=main, args=(args,))
