@@ -119,6 +119,7 @@ bibsya.jp
 binance.com
 binance.org
 binary.com
+biocryptology.com
 bitdefender.com
 bitdefender.net
 bitmex.com
@@ -453,6 +454,7 @@ jamieweb.net
 jet.com
 jobapi.io
 jobapi.net
+juul.com
 kartpay.com
 k-classic-mobil.de
 keepersecurity.com
@@ -483,11 +485,14 @@ login.gov
 lootdog.io
 loudr.com
 loudr.fm
+lovense.com
 luckey.app
 luckey.fr
 luckeyhomes.com
 luckey.in
 luxuryretreats.com
+lyft.com
+lyft.net
 lyst.com
 magento.com
 magentocommerce.com
@@ -558,6 +563,7 @@ nflximg.net
 nflxvideo.net
 niche.co
 nimiq.com
+nintendowifi.net
 norma-mobil.de
 notjet.net
 nowserv.in
@@ -671,6 +677,7 @@ segment.com
 segment.io
 semmle.net
 semrush.com
+setapp.com
 shenjing.com
 shieldox.ai
 shieldox.com
@@ -754,6 +761,7 @@ thefacebook.com
 thefacebook.net
 threatcrowd.org
 tmall.com
+tomochain.com
 tomtom.com
 tomtomgroup.com
 toplayerserver.com
@@ -794,6 +802,7 @@ unikrn.com
 upgrade.com
 upserve.com
 upwork.com
+urbanclap.com
 urbandictionary.biz
 urbandictionary.blog
 urbandictionary.com
