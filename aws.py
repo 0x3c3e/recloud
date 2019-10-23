@@ -1,6 +1,7 @@
 import argparse
 import sys
 import time
+from timeit import default_timer as timer
 from multiprocessing import Process
 
 import boto3
@@ -25,6 +26,10 @@ DESCRIPTION = r"""
  / /  /  __/ /__/ / /_/ / /_/ / /_/ /  
 /_/   \___/\___/_/\____/\__,_/\__,_/   
 """
+
+CYCLES = 0
+TOTAL_TIME = 0
+UNIQUE_ADDRESSES = []
 
 AWSRegions = [
     "us-east-2",
@@ -77,7 +82,9 @@ def main(args):
         )
     )
 
+    
     for _ in range(args.count):
+        start = timer()
 
         for _ in range(3):
             try:
@@ -89,12 +96,12 @@ def main(args):
 
         address = eip["PublicIp"]
         allocation_id = eip["AllocationId"]
-
-        if address in ip_list:
-            print("\t Hooray, the ip is in the list: {}".format(address))
-            break
-
-        print("\t- {:15}".format(address), end="\r")
+        
+        if address not in UNIQUE_ADDRESSES:
+            UNIQUE_ADDRESSES.append(address)
+            if address in ip_list:
+                print("\t Hooray, the ip is in the list: {}".format(address))
+                break
 
         for _ in range(3):
             try:
@@ -103,6 +110,14 @@ def main(args):
             except Exception:
                 time.sleep(1)
                 print("Release exception")
+        
+        end = timer()
+
+        TOTAL_TIME += end - start
+        CYCLES += 1
+
+        print(f"\t- Average allocation+release time is (seconds): {TOTAL_TIME / CYCLES}", end="\r")
+        print(f"\t- Ratio of unique/allocated ip addresses is: {len(UNIQUE_ADDRESSES) / CYCLES}", end="\r")
 
     print("\n")
 
