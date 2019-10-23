@@ -27,10 +27,6 @@ DESCRIPTION = r"""
 /_/   \___/\___/_/\____/\__,_/\__,_/   
 """
 
-TATAL_CYCLES = 0
-CYCLES = 0
-TOTAL_TIME = 0
-UNIQUE_ADDRESSES = []
 
 AWSRegions = [
     "us-east-2",
@@ -70,7 +66,11 @@ def check_ip_by_region(region):
 
 
 def main(args):
-    global TATAL_CYCLES, CYCLES, TOTAL_TIME, UNIQUE_ADDRESSES
+    
+    TATAL_CYCLES = 0
+    CYCLES = 0
+    TOTAL_TIME = 0
+    UNIQUE_ADDRESSES = []
 
     engine = boto3.client(
         "ec2",
