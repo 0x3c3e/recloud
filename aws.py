@@ -1,45 +1,29 @@
 import argparse
-import re
 import sys
 import time
 from multiprocessing import Process
 
 import boto3
-import dns.resolver
 import requests
-import tldextract
 from botocore.config import Config
 import tempfile
 import subprocess
 
 config = Config(retries=dict(max_attempts=10))
 
-domains = []
-blacklist = [
-    "amazonaws.com",
-    "dynu.com",
-    "bona.com",
-    "splunkcloud.com",
-    "elasticbeanstalk.com",
-    "openvpn.net",
-    "cisco.com",
-]
+# TODO: remove global variables
+# TODO: take ip list filename from args
+# TODO: change exception handling
 
 with open("ip_list") as f:
     ip_list = [line.strip() for line in f.readlines()]
 
-with open("domains.txt") as f:
-    for line in f:
-        domain = line.strip()
-        if domain not in blacklist:
-            domains.append(domain)
-
-Description = """                      
- _____ _           _ _____                     
-|     | |___ _ _ _| | __  |___ ___ ___ ___ ___ 
-|   --| | . | | | . |    -| .'|  _| . | . |   |
-|_____|_|___|___|___|__|__|__,|___|___|___|_|_|
-    Cloud IP Hunting - Proof of Concept [AWS]         
+DESCRIPTION = r"""                      
+                   __                __
+   ________  _____/ /___  __  ______/ /
+  / ___/ _ \/ ___/ / __ \/ / / / __  / 
+ / /  /  __/ /__/ / /_/ / /_/ / /_/ /  
+/_/   \___/\___/_/\____/\__,_/\__,_/   
 """
 
 AWSRegions = [
@@ -54,43 +38,6 @@ AWSRegions = [
     "eu-west-3",
     "eu-north-1",
 ]
-
-Session = None
-CSRFToken = None
-
-
-def get_hostnames(address):
-    global Session
-    global CSRFToken
-
-    if not Session:
-        Session = requests.Session()
-        response = Session.get("https://securitytrails.com/list/ip/1.1.1.1")
-        CSRFToken = re.findall(r'csrf_token = "(\S+?)"', response.text)[0]
-
-    response = Session.post(
-        f"https://securitytrails.com/app/api/v1/list?ipv4={address}",
-        json={"_csrf_token": CSRFToken},
-    )
-
-    if response.status_code != 200:
-        print("[!] SecurityTrails request failed!")
-        time.sleep(2)
-        raise ValueError
-
-    records = response.json().pop("records", [])
-
-    if records:
-        return [r["hostname"] for r in records]
-
-    return []
-
-
-def check_ip(hostname):
-    try:
-        return dns.resolver.query(hostname, "A")
-    except Exception:
-        return []
 
 
 def check_ip_by_region(region):
@@ -144,34 +91,8 @@ def main(args):
         allocation_id = eip["AllocationId"]
 
         if address in ip_list:
-            print("\tHooray, the ip is in the list: {}".format(address))
+            print("\t Hooray, the ip is in the list: {}".format(address))
             break
-
-        for _ in range(3):
-            try:
-                hostnames = get_hostnames(address)
-                break
-            except Exception:
-                hostnames = []
-                print("Issues with trails")
-                time.sleep(1)
-
-        if hostnames:
-            whitelist_tld = [
-                hostname
-                for hostname in hostnames
-                if ".".join(tldextract.extract(hostname)[1:]) in domains
-            ]
-            used_in_dns_record = any(
-                address in [k.address for k in check_ip(hostname)]
-                for hostname in whitelist_tld
-            )
-
-            if not used_in_dns_record:
-                print("\t= {} : {}".format(address, hostnames[0]))
-            else:
-                print("\t+++ {} : {}".format(address, "|".join(hostnames)))
-                break
 
         print("\t- {:15}".format(address), end="\r")
 
@@ -187,10 +108,10 @@ def main(args):
 
 
 if __name__ == "__main__":
-    print(Description)
+    print(DESCRIPTION)
 
     parser = argparse.ArgumentParser(
-        description=Description, formatter_class=argparse.RawDescriptionHelpFormatter
+        description=DESCRIPTION, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("region", choices=AWSRegions, help="AWS Region to search")
     parser.add_argument(
@@ -204,6 +125,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args(sys.argv[1:])
     ip_list = check_ip_by_region(args.region)
+
+    print(f"Length of ip list is: {len(ip_list)}")
+
     procs = []
     for _ in range(args.processes):
         proc = Process(target=main, args=(args,))
