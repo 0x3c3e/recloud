@@ -70,7 +70,7 @@ def check_ip_by_region(region):
 
 def main(args):
     global CYCLES, TOTAL_TIME, UNIQUE_ADDRESSES
-    
+
     engine = boto3.client(
         "ec2",
         aws_access_key_id=args.access_key,
@@ -118,8 +118,7 @@ def main(args):
         TOTAL_TIME += end - start
         CYCLES += 1
 
-        print(f"\t- Average allocation+release time is (seconds): {TOTAL_TIME / CYCLES}", end="\r")
-        print(f"\t- Ratio of unique/allocated ip addresses is: {len(UNIQUE_ADDRESSES) / CYCLES}", end="\r")
+        print(f"\t- Time: {TOTAL_TIME / CYCLES}, Ratio: {len(UNIQUE_ADDRESSES) / CYCLES}", end="\r")
 
     print("\n")
 
