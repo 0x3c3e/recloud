@@ -85,7 +85,7 @@ def main(args):
         )
     )
 
-    TATAL_CYCLES += args.count)
+    TATAL_CYCLES += args.count
     for _ in range(args.count):
         start = timer()
 
