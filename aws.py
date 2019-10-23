@@ -27,6 +27,7 @@ DESCRIPTION = r"""
 /_/   \___/\___/_/\____/\__,_/\__,_/   
 """
 
+TATAL_CYCLES = 0
 CYCLES = 0
 TOTAL_TIME = 0
 UNIQUE_ADDRESSES = []
@@ -69,7 +70,7 @@ def check_ip_by_region(region):
 
 
 def main(args):
-    global CYCLES, TOTAL_TIME, UNIQUE_ADDRESSES
+    global TATAL_CYCLES, CYCLES, TOTAL_TIME, UNIQUE_ADDRESSES
 
     engine = boto3.client(
         "ec2",
@@ -84,7 +85,7 @@ def main(args):
         )
     )
 
-    
+    TATAL_CYCLES += args.count)
     for _ in range(args.count):
         start = timer()
 
@@ -94,7 +95,7 @@ def main(args):
                 break
             except Exception:
                 time.sleep(1)
-                print("Allocate exception")
+                print("Allocate exception", end="\r")
 
         address = eip["PublicIp"]
         allocation_id = eip["AllocationId"]
@@ -111,14 +112,14 @@ def main(args):
                 break
             except Exception:
                 time.sleep(1)
-                print("Release exception")
+                print("Release exception", end="\r")
         
         end = timer()
 
         TOTAL_TIME += end - start
         CYCLES += 1
 
-        print(f"\t- Time: {TOTAL_TIME / CYCLES}, Ratio: {len(UNIQUE_ADDRESSES) / CYCLES}", end="\r")
+        print(f"\t- Time: {TOTAL_TIME / CYCLES}, Ratio: {len(UNIQUE_ADDRESSES) / CYCLES}, Progress: {CYCLES}/{TATAL_CYCLES}", end="\r")
 
     print("\n")
 
