@@ -69,6 +69,8 @@ def check_ip_by_region(region):
 
 
 def main(args):
+    global CYCLES, TOTAL_TIME, UNIQUE_ADDRESSES
+    
     engine = boto3.client(
         "ec2",
         aws_access_key_id=args.access_key,
